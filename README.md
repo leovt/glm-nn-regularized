@@ -20,6 +20,16 @@ Predictive performance is evaluated via out-of-sample Poisson deviance (see Eval
 
 The central result is how predictive performance and departure from GLM structure move together as λ varies, illustrated by dependence plots at representative values.
 
+## Data
+
+The data archive was downloaded from [AI Tools for Actuaries data](https://people.math.ethz.ch/~wueth/AITools/Data.zip) on 22 August 2026 and stored locally as `data/Data.zip`.
+
+SHA-256:
+
+```text
+3175fab0efa56ac5383a8803ef6c9243b1dc2c581e03809f684fbd70dde88c47  data/Data.zip
+```
+
 ## Repository Structure
 
 TODO.

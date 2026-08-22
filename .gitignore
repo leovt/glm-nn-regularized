@@ -233,3 +233,6 @@ deliverables/report/report.pdf
 
 # Local literature PDFs
 literature/**/*.pdf
+
+# Local data
+data/
