@@ -1,0 +1,21 @@
+\documentclass[a4paper]{article}
+
+\usepackage[british]{babel}
+
+\title{Regularized GLM--Neural Network Hybrids for Insurance Pricing\\
+\vspace{0.5cm}\large
+CAS ETH in Machine Learning in Finance and Insurance -- Innovation Project Report}
+\author{Leonhard Vogt}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+This project investigates regularized hybrids of generalized linear models and neural networks for insurance claim frequency pricing.
+Existing CANN architectures preserve actuarial interpretability by freezing a fitted GLM and training a neural correction, while fully flexible networks may improve fit at the cost of structure.
+The proposed model trains the GLM branch and correction network jointly, penalizing the correction parameters so regularization strength controls the trade-off between GLM-like behaviour and nonlinear flexibility.
+\end{abstract}
+\thispagestyle{empty}
+
+\end{document}
