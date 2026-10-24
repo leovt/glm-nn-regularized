@@ -1,21 +1,516 @@
 \documentclass[a4paper]{article}
 
 \usepackage[british]{babel}
+\usepackage{amsmath}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{caption}
 
 \title{Regularized GLM--Neural Network Hybrids for Insurance Pricing\\
-\vspace{0.5cm}\large
-CAS ETH in Machine Learning in Finance and Insurance -- Innovation Project Report}
+\large CAS ETH in Machine Learning in Finance and Insurance -- Innovation Project Report}
 \author{Leonhard Vogt}
 \date{\today}
 
 \begin{document}
-
 \maketitle
+
+% Working structure for the required 10--15-page report, not a finished submission.
+% Suggested allocation: introduction/literature 2 pages; data 1--2;
+% methods 2--3; experiments/results 3--4; discussion/conclusion 1--2.
 \begin{abstract}
-This project investigates regularized hybrids of generalized linear models and neural networks for insurance claim frequency pricing.
-Existing CANN architectures preserve actuarial interpretability by freezing a fitted GLM and training a neural correction, while fully flexible networks may improve fit at the cost of structure.
-The proposed model trains the GLM branch and correction network jointly, penalizing the correction parameters so regularization strength controls the trade-off between GLM-like behaviour and nonlinear flexibility.
+This project investigates regularized hybrids of generalized linear models
+and neural networks for insurance claim frequency pricing.
+The proposed model trains a linear branch and a neural correction jointly,
+with a penalty on the correction's dense-layer weights.
+Saved notebook outputs for French motor insurance data show a test Poisson
+deviance of 44.952 for a weakly penalised hybrid, compared with 47.179 for
+the baseline generalized linear model and 44.955 for a frozen hybrid.
+These descriptive results suggest that regularization can recover
+baseline-like predictions, but do not establish improved interpretability
+or a statistically significant advantage over the benchmarks.
+The planned SHAP analysis remains outstanding.
 \end{abstract}
-\thispagestyle{empty}
+
+\section{Introduction}
+\subsection{Motivation and research question}
+Generalized linear models (GLMs) provide an explicit additive structure
+on the log-rate scale.
+Feed-forward neural networks (FNNs) allow more flexible effects.
+A combined actuarial neural network (CANN) adds a learned correction to
+a fitted GLM \cite{aitools,nesting}.
+This project asks whether joint training with asymmetric regularization
+can retain predictive improvements while favouring a GLM-like structure.
+
+\subsection{Contribution and scope}
+The empirical contribution is a jointly trained GLM--neural network hybrid
+and a regularization sweep on French motor third-party liability data.
+The analysis concerns claim frequency only.
+Synthetic data, severity modelling, LocalGLMnet and XGBoost are not included
+in the available notebook results.
+The distinction between the proposed design and its current implementation
+is documented below.
+
+\section{Background and related work}
+\subsection{Actuarial learning and hybrid models}
+\emph{AI Tools for Actuaries} supplies the main methodological and
+implementation starting point \cite{aitools,notebooks}.
+\emph{Statistical Foundations of Actuarial Learning and its Applications}
+is a broader reference for GLMs, neural networks and regularization
+\cite{foundations}.
+Schelldorfer and W\"uthrich provide the foundational reference for nesting
+classical actuarial models in neural networks \cite{nesting}.
+% Expand into a short comparison of frozen CANN and jointly fitted hybrids.
+
+\subsection{Explainability and departure from GLM structure}
+SHapley Additive exPlanations (SHAP) provide a framework for attributing
+predictions to input features \cite{shap}.
+Mayer, Meier and W\"uthrich discuss their actuarial use \cite{actuarialshap}.
+The intended diagnostic compares per-covariate SHAP dependence plots with
+GLM effects on the log-rate scale.
+Departure from GLM structure is not itself a numerical measure of
+explainability.
+No SHAP results are stored in the project notebook.
+
+\section{Data and preprocessing}
+\subsection{Source and sample}
+The notebook loads \texttt{freMTPL2freq.parquet} from the data archive
+accompanying \emph{AI Tools for Actuaries} \cite{data,notebooks}.
+Its saved output contains 678,007 policies and no missing entries in the
+14 imported columns.
+The supplied \texttt{LearnTest} labels allocate 610,206 policies to the
+learning sample and 67,801 to the test sample, corresponding to a 90/10 split.
+The recorded claim totals are 23,738 and 2,645 respectively.
+% Add exposure totals, claim-count distribution and checks for duplicates,
+% positive exposure, valid density and admissible category ranges.
+
+\subsection{Feature construction}
+The GLM uses driver-age groups, vehicle brand, fuel type, log population
+density and ordinal area, yielding 19 encoded predictors plus an intercept.
+Driver age 31--40 is the reference group.
+Although preprocessing also constructs vehicle-power, vehicle-age and
+bonus--malus variables, the fitted GLM formula does not use them.
+
+The neural branch additionally uses vehicle age, bonus--malus, vehicle
+power and region, and uses continuous rather than grouped driver age.
+Vehicle age, driver age, bonus--malus and power are capped at 20, 90, 150
+and 15 respectively and standardised.
+Log density is rounded to two decimal places and standardised; area is
+ordinally encoded and standardised.
+Vehicle brand and region receive two-dimensional embeddings.
+Preprocessors are fitted on the full learning sample.
+Consequently, differences between neural models and the GLM reflect both
+functional flexibility and access to additional predictors.
+
+\section{Model specifications and estimation}
+\subsection{Poisson frequency model}
+For claim count $Y_i$, exposure $e_i>0$ and predictors $x_i$, assume
+\[
+ Y_i\mid X_i=x_i\sim\operatorname{Poisson}(\mu_i),\qquad
+ \mu_i=e_i r_i,\qquad r_i=\exp\{\eta(x_i)\}.
+\]
+Exposure enters the GLM as a log offset.
+The neural models predict annualised rates and fit $Y_i/e_i$ with
+exposure weights using the Keras Poisson loss.
+
+\subsection{Benchmarks and implementation controls}
+The baseline GLM is fitted by maximum likelihood using iteratively
+reweighted least squares.
+A Keras model initialised with its coefficients and an untrained CANN
+with zero correction reproduce its predictions and reported deviance.
+Additional linear-network experiments examine optimisation drift from
+the fitted GLM.
+
+The FNN has three hidden layers of widths 20, 15 and ten with hyperbolic
+tangent activations, followed by an exponential rate output.
+The frozen CANN multiplies the fitted GLM rate by an exponential neural
+correction, equivalently adding that correction on the log-rate scale.
+The standalone FNN uses the same constructor with the GLM multiplier
+replaced by one.
+
+\section{Modelling functions}
+All models use the same statistical model, a Poisson model with log link.
+The difference lies in the specification of the linear predictor $\eta(x_i)$, which is a linear function for the GLM and a combination of linear and neural functions for the hybrids.
+
+\subsection{GLM}
+The reference GLM is defined as a linear predictor function followed by the inverse of the link function.
+In the case of the Poisson GLM, the log link function is used, the canonical link for the Poisson distribution.
+
+The log link function has the advantage that the resulting model is multiplicative, each input factor can be seen as contributing a multiplicative effect on the resulting claims rate.
+
+For comparing the GLM with other models it is important not to neglect the role of input representation and prepocessing, often incorporating expert knowlegde and judgement.
+Figure \ref{fig:glm} shows the three important stages in the data flow, the data processing on the left, the linear prdiction in the middle, and the exponential output on the right.
+
+\addvspace{\baselineskip}
+\begin{minipage}{\textwidth}
+    \captionof{figure}{GLM data flow}
+    \label{fig:glm}
+    \centering
+    \includegraphics[scale=0.8]{glm.drawio.pdf}
+\end{minipage}\par
+\addvspace{\baselineskip}
+
+The reference GLM was taken from the \emph{AI Tools for Actuaries} repository, and is used as a benchmark for the other models.
+The following features of the dataset were used and preprocessed as follows:
+\begin{itemize}
+    \item Driver age: grouped into 5-year intervals, and one-hot encoded.
+    \item Vehicle brand: one-hot dummy encoded.
+    \item Fuel type: one-hot encoded.
+    \item Log population density: rounded to two decimal places, and standardised.
+    \item Ordinal area: ordinally encoded, and standardised.
+\end{itemize}
+
+\subsection{Feed-forward neural network (FNN)}
+The feed-forward neural network (FNN) is a fully connected network with a specified architecture.
+In this experiment, the architecture for the FNN is chosen identical in the FNN stand-alone, the CANN and the regularized hybrid model.
+The architecture is taken from the \emph{AI Tools for Actuaries} repository, and consists of three hidden layers with widths 20, 15 and 10, with hyperbolic tangent activation functions, followed by an exponential output layer.
+In figure \ref{fig:fnn}, the linear predictor of the FNN is illustrated without the exponential output layer.
+The data flow of the FNN is shown, with the data preprocessing on the left, the three hidden layers in the middle, and the exponential output on the right.
+
+Instead of one-hot dummy encoding the FNN uses a learned embedding, which is as a small neural network that maps the categorical input to a lower-dimensional representation.
+The FNN is provided with more features than the GLM, representing less expert involvement in selectzion.
+
+\addvspace{\baselineskip}
+\begin{minipage}{\textwidth}
+    \captionof{figure}{FNN data flow}
+    \label{fig:fnn}
+    \centering
+    \includegraphics[scale=0.8]{fnn.drawio.pdf}
+\end{minipage}\par
+\addvspace{\baselineskip}
+
+\subsection{CANN and regularized mixed GLM-FNN}
+The functions expressed by the CANN and the regularized hybrid are identical, their representation in code
+differs in the order of mixing and exponentiation. While the functions are equivalemt, the calibration of the
+model parameters is different, this is the main experimantal question of this project.
+
+As the CANN implementation (figure \ref{fig:cann}) uses fixed GLM predictions, not merely the GLM coefficients, it is conventient
+to implement the mixing step as a multiplication of the GLM rate with a correction factor given by an exponential of the linear FNN.
+The GLM does not need to be implemented in the same framework as the FNN, as it is not re-trained and the GLM prediction is fixed.
+
+\addvspace{\baselineskip}
+\begin{minipage}{\textwidth}
+    \captionof{figure}{CANN data flow}
+    \label{fig:cann}
+    \centering
+    \includegraphics[scale=0.8]{cann.drawio.pdf}
+\end{minipage}\par
+\addvspace{\baselineskip}
+
+In the case of the regularized hybrid (figure \ref{fig:hybrid}), which needs a GLM implementation that can be jointly trained with the FNN,
+it is more convenient to implement the linear predictor as the sum of both models, and perform the exponentiation afterwards.
+
+
+\addvspace{\baselineskip}
+\begin{minipage}{\textwidth}
+    \captionof{figure}{Regularized mixed GLM-FNN data flow}
+    \label{fig:hybrid}
+    \centering
+    \includegraphics[scale=0.8]{mixed.drawio.pdf}
+\end{minipage}\par
+\addvspace{\baselineskip}
+
+\section{Implementation}
+\subsection{Implementing GLM in Keras}
+The hybrid model introduces two impementation challenges.
+Firstly, as the GLM parameters are to be re-trained together with the FNN,
+the stochastic gradient descent must be implemented in a way that includes the GLM parameters in the gradient computation.
+
+The GLM can be implemented as a single dense layer with exponential activation. For this experiment, the exponential activation
+function was implemented in a separate layer, thus allowing the GLM implementation to be reused in the hybrid model.
+
+The bigger second challenge is to make sure that the GLM parameters are estimated reasonably well by the stochastic gradient descent optimizer, and not drift away from the maximum likelihood estimates.
+In order to achieve this, before training hybrid models, several experiments were conducted to train a GLM in Kersa, using NADAM stochastic gradient descent optimizer.
+
+The results of these experiments are shown in table \ref{tab:comparison}, and show that the Keras GLM implementation with appropriate hyperparameter settings is stable, i.e. does not drift away from the maximum likelihood estimates.
+However too small batch sized can lead to considerable drift away from the maximum likelyhood estimate on the training data, despite this being a global optimum on a convex function.
+
+The following model calibration experiments were conducted:
+\begin{itemize}
+\item {GLM: maximum likelihood estimate using iteratively reweighted least squares, implemented in \texttt{statsmodels}.}
+\item {Keras GLM control: Keras implementation of the GLM, parameters initialized with the maximum likelihood estimates, no training performed. (This test the correct representation of the model function in Keras.)}
+\item {Keras GLM trained: Keras implementation of the GLM, parameters randomly initialized and trained using NADAM optimizer.}
+\item {Keras GLM trained and initialized: Keras implementation of the GLM, parameters initialized with the maximum likelihood estimates and further trained using NADAM optimizer. (This tests whether stochastic gradient descent can drift away from the maximum likelihood estimates.)}
+\end{itemize}
+
+The experiments were conducted with and without a validation split, and with different batch sizes. In case of the randomly initialized models the best epoch was kept for final evaluation, in case of the drift tests the last epoch was kept.
+
+The following table shows the results of the experiments, with the learning and test Poisson deviance, and the observed over expected claims ratio (O/E) on the test data.
+
+
+With a batch size of 5,000 stochastic gradient descent does not calibrate well, in particular when training data is further split into fitting and validation sets.
+Batch sizes of 50,000 and above are sufficient to calibrate the GLM parameters well, and avoid drift away from the maximum likelihood estimates.
+
+It is notable that all models retain similar deviance on the test data, but the calibration is worse for small batch sizes.
+Deviance and calibration measure different aspects of model performance.
+Deviance is better suited for judging the predictive performace on an individual level, the discriminaion between risks.
+Calibration or scoring measures the agrregate performance of the model.
+Close to the optimum, deviance is approximately quadratic in calibration error, the penalty for small calibration errors is therefore small.
+
+For reserving often calibration is more important than discrimination, however for pricing well discriminated risks are important for risk selection and avoiding adverse selection.
+%todo: cite https://people.math.ethz.ch/~wueth/Lecture/InternationalSummerSchool/Lecture%208_Calibration/Chapter-8-Calibration.pdf
+
+
+
+
+\subsection{Jointly trained regularized hybrid}
+With $z_i$ denoting the GLM design and $u_i$ the neural inputs, the
+implemented predictor is
+\[
+ \eta(z_i,u_i)=z_i^\top\beta+g_\theta(u_i).
+\]
+The GLM coefficients initialise the linear branch.
+The correction's final kernel is initialised to zero, so the initial
+prediction equals the GLM prediction; the hidden layers are not all
+initialised to zero.
+Both branches are trainable.
+The implemented objective is
+\[
+ L(\beta,\theta)=\frac{1}{n}\sum_{i=1}^n
+ e_i\left[r_i-\frac{Y_i}{e_i}\log r_i\right]
+ +\lambda\sum_{\ell\in\mathcal D}\lVert W_\ell\rVert_F^2,
+\]
+where $\mathcal D$ comprises the correction's hidden and output dense
+layers.
+The penalty excludes embeddings and hidden-layer biases; the correction
+output has no bias.
+This differs from the outline's proposed penalty on all correction
+parameters and should not be described as full-parameter ridge shrinkage.
+The linear branch is unpenalised.
+
+\section{Experimental design and evaluation}
+\subsection{Training and validation}
+Neural runs use Nadam and seed 1234.
+The principal FNN and CANN runs use 200 epochs and batches of 5,000;
+the regularization sweep uses 200 epochs and batches of 50,000.
+Ten percent of the learning sample is reserved through
+\texttt{validation\_split=0.1} in these runs.
+The callback restores the best validation-loss weights; its patience
+equals the epoch budget, so it does not normally shorten training.
+For penalised models, monitored validation loss includes the penalty.
+
+This implementation differs from the outline's proposed 56/14/30 split.
+Moreover, the initial GLM and preprocessing use the full learning sample,
+including the neural validation subset.
+That subset is therefore not independent of all fitting steps.
+Reported learning-sample metrics include the validation observations.
+% For a revised experiment, split before all fitting and preserve an
+% independent validation sample for every model and preprocessing step.
+
+\subsection{Performance measures}
+For observed rates $q_i=Y_i/e_i$, the reported score is
+\[
+ D_{100}=\frac{200}{\sum_i e_i}\sum_i e_i
+ \left[q_i\log\left(\frac{q_i}{r_i}\right)-q_i+r_i\right],
+\]
+with $0\log(0/r_i)=0$.
+This is 100 times the exposure-weighted mean Poisson deviance of rates,
+not the unweighted mean deviance of counts.
+Aggregate calibration is reported as observed divided by expected claims,
+$\sum_iY_i/\sum_i e_i r_i$ (O/E).
+A value of one denotes aggregate balance, without implying subgroup
+calibration.
+Gini indices and lift curves were proposed but are not present in the
+saved outputs.
+
+\section{Results}
+All numerical results below are transcribed from saved outputs in
+\texttt{notebooks/project.ipynb}; the notebook was not rerun for this draft.
+
+\subsection{Baseline reproduction and predictive comparison}
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrrr}
+\hline
+Model & Learning $D_{100}$ & Test $D_{100}$ & Test O/E\\
+\hline
+GLM & 46.954 & 47.179 & 0.9978\\
+Keras GLM control & 46.954 & 47.179 & 0.9978\\
+Frozen CANN & 44.964 & 44.955 & 1.0104\\
+FNN & 44.830 & 44.894 & 1.0160\\
+FNN, mean initialisation & 44.814 & 44.903 & 1.0227\\
+Joint hybrid, $\lambda=0$ & 44.986 & 44.989 & 0.9963\\
+Joint hybrid, $\lambda=10^{-5}$ & 45.011 & 44.952 & 1.0027\\
+\hline
+\end{tabular}
+\caption{Selected saved notebook results. Learning scores include validation
+observations; neural batch sizes differ between benchmarks and hybrids.}
+\label{tab:comparison}
+\end{table}
+
+The GLM reproduction assertions check learning and test scores against
+46.954 and 47.179 respectively.
+The lowest displayed test score among the principal models belongs to
+the standalone FNN.
+The weakly penalised hybrid is close to the frozen CANN, with a test-score
+difference of approximately 0.003.
+These are single-run descriptive comparisons without uncertainty estimates.
+The lowest test score in a sweep is not an independently validated
+selection of regularization strength.
+
+\subsection{Regularization path}
+\begin{table}[htbp]
+\centering
+\begin{tabular}{rrrr}
+\hline
+$\lambda$ & Learning $D_{100}$ & Test $D_{100}$ & Test O/E\\
+\hline
+$0$ & 44.986 & 44.989 & 0.9963\\
+$10^{-5}$ & 45.011 & 44.952 & 1.0027\\
+$10^{-4}$ & 45.182 & 45.105 & 1.0116\\
+$5\times10^{-4}$ & 45.641 & 45.620 & 0.9972\\
+$10^{-3}$ & 45.717 & 45.727 & 0.9974\\
+$2\times10^{-3}$ & 46.954 & 47.182 & 0.9961\\
+$5\times10^{-3}$ & 46.955 & 47.182 & 0.9966\\
+$10^{-2}$ & 46.955 & 47.182 & 0.9966\\
+$10^{-1}$ & 46.955 & 47.182 & 0.9966\\
+$100$ & 46.955 & 47.182 & 0.9966\\
+\hline
+\end{tabular}
+\caption{Joint-hybrid sweep with batch size 50,000 and 200 epochs.}
+\label{tab:path}
+\end{table}
+
+The saved scores approach the GLM baseline for $\lambda\geq0.002$.
+For the final run ($\lambda=100$), the displayed training correction values
+are approximately $2.47\times10^{-7}$.
+This supports a near-zero correction in the displayed observations,
+without establishing effect recovery or interpretability across the path.
+% Add a deviance-versus-lambda figure, treating lambda=0 separately on a log axis.
+
+\subsection{Structural diagnostics still required}
+The available notebook does not compute SHAP values or compare learned
+linear coefficients across regularization strengths.
+Representative SHAP dependence plots, with an explicit background sample
+and attribution convention, are needed to assess the proposed
+performance--structure trade-off.
+Any synthetic ground-truth recovery experiment should be reported only
+if implemented and evaluated.
+
+\section{Discussion and real-world applicability}
+\subsection{Interpretation of the findings}
+The current results support a predictive transition between a flexible
+hybrid and a baseline-like model as regularization increases.
+They do not show that linear effects are correctly allocated to the
+linear branch or that regularization guarantees an interpretable tariff.
+Because the branches can both represent some simple effects, their
+decomposition is not uniquely determined by predictive fit alone.
+
+\subsection{Limitations and robustness}
+The main limitations are unequal feature access, different batch sizes,
+validation reuse in initial fitting and preprocessing, incomplete penalty
+coverage and a single seed and supplied test split.
+Regularized validation losses also combine fit and penalty rather than
+providing a common unpenalised selection score across $\lambda$ values.
+Repeated seeds, comparable feature sets and independent model selection
+would strengthen the comparison.
+The saved outputs require a clean execution and environment record before
+final submission.
+
+\subsection{Implications for insurance pricing}
+A regularization path could help compare predictive gains with the
+complexity of corrections to a familiar tariff structure.
+Practical use would additionally require subgroup calibration, stability
+checks, documentation of feature effects and review of the resulting
+pricing decisions.
+Aggregate O/E and Poisson deviance alone do not establish deployment
+readiness.
+
+\section{Conclusion}
+The implemented hybrid provides a tunable penalty on neural dense-layer
+weights while allowing the GLM branch to adapt.
+Available results show improved test deviance over the selected GLM
+baseline at weak penalties and baseline-like performance at stronger
+penalties.
+The central claim about departure from GLM structure remains open until
+the planned structural diagnostics are completed.
+
+\section*{Use of AI tools and attribution}
+The project outline explicitly records drafting assistance from Claude.
+OpenAI Codex assisted with the structure and wording of this report draft,
+inspection of the supplied project files and transcription of saved
+notebook results into tables.
+The numerical results reported here originate from those saved outputs;
+they were not generated by running the experiments during report drafting.
+The available files do not establish the full extent of AI assistance
+used to develop the project notebook.
+% Before submission, the author should complete this disclosure with any
+% additional tools and their actual uses, and review all text and results.
+No claim of independent author verification is made in this working draft.
+
+The analysis builds on published literature and existing teaching code.
+In particular, the project notebook explicitly attributes its GLM
+preprocessing to \texttt{Ch3\_02\_Poisson\_GLM.ipynb} in the
+\emph{AI Tools for Actuaries} repository \cite{notebooks}.
+Its FNN section also identifies these teaching materials as its starting
+point; the repository includes embedding and CANN notebooks.
+These materials are associated with the Swiss Association of Actuaries'
+summer-school teaching programme \cite{sav,teaching}.
+Attribution belongs to the named authors and code contributors, rather
+than implying that the notebook code was independently developed here.
+The jointly trainable branch, penalty sweep and project-specific
+experiments constitute adaptations of this starting point.
+% Confirm the precise copied/adapted cells and upstream revision before submission.
+
+\begin{thebibliography}{9}
+\bibitem{aitools}
+W\"uthrich, M. V., Richman, R., Avanzi, B., Lindholm, M., Maggi, M.,
+Mayer, M., Schelldorfer, J. and Scognamiglio, S.
+\emph{AI Tools for Actuaries}. Lecture notes, SSRN 5162304.
+\url{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5162304}.
+
+\bibitem{foundations}
+W\"uthrich, M. V. and Merz, M. (2023).
+\emph{Statistical Foundations of Actuarial Learning and its Applications}.
+Springer.
+\url{https://www.research-collection.ethz.ch/handle/20.500.11850/644920}.
+
+\bibitem{nesting}
+Schelldorfer, J. and W\"uthrich, M. V.
+``Nesting Classical Actuarial Models into Neural Networks''.
+SSRN 3320525.
+\url{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3320525}.
+
+\bibitem{actuarialshap}
+Mayer, M., Meier, D. and W\"uthrich, M. V. (2023).
+``SHAP for Actuaries: Explain any Model''. SSRN 4389797.
+\url{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4389797}.
+
+\bibitem{shap}
+Lundberg, S. M. and Lee, S.-I. (2017).
+``A Unified Approach to Interpreting Model Predictions''.
+\emph{Advances in Neural Information Processing Systems}, 30.
+\url{https://proceedings.neurips.cc/paper_files/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html}.
+
+\bibitem{notebooks}
+\emph{AI Tools for Actuaries}: accompanying Python notebooks.
+\texttt{Ch3\_02\_Poisson\_GLM.ipynb},
+\texttt{Ch5\_05\_FNNs - embedding.ipynb} and
+\texttt{Ch5\_07\_CANN.ipynb}.
+\url{https://github.com/wueth/AITools4Actuaries}.
+
+\bibitem{data}
+\emph{AI Tools for Actuaries}: data archive containing
+\texttt{freMTPL2freq.parquet}.
+\url{https://people.math.ethz.ch/~wueth/AITools/Data.zip}.
+
+\bibitem{sav}
+Swiss Association of Actuaries.
+\emph{AI Tools for Actuaries (work in progress)}. Teaching-material overview.
+\url{https://www.actuaries.ch/document/download/289}.
+
+\bibitem{teaching}
+\emph{AI Tools for Actuaries}. Project website and summer-school information.
+\url{https://aitools4actuaries.com/}.
+\end{thebibliography}
+
+\appendix
+\section{Reproducibility and supplementary results}
+The primary implementation is
+\href{../../notebooks/project.ipynb}{\texttt{notebooks/project.ipynb}}.
+The project plan is recorded in
+\href{../outline/CAS_Innovation_Project_Outline.md}{the project outline}.
+% Add package versions, hardware, execution date, data provenance/revision,
+% full optimisation-control table and final figure-generation instructions.
+% Keep generated PDFs and LaTeX auxiliary files outside version control.
 
 \end{document}
