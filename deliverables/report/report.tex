@@ -1,5 +1,5 @@
 \documentclass[a4paper]{article}
-
+\usepackage{booktabs}
 \usepackage[british]{babel}
 \usepackage{amsmath}
 \usepackage[hidelinks]{hyperref}
@@ -602,5 +602,36 @@ The project plan is recorded in
 % Add package versions, hardware, execution date, data provenance/revision,
 % full optimisation-control table and final figure-generation instructions.
 % Keep generated PDFs and LaTeX auxiliary files outside version control.
+
+\section{Reproducing GLM resultis in tensorflow}
+Before training the regularized model, we want to establish that the
+optimizer handles the baseline GLM correctly. 
+The baseline GLM is a convex optimuzation problem and the MLE solution is unique.
+However as we see in the following table, depending on optimizer settings,
+a considerable calibration error can be introduced by switching from the 
+specialized GLM optimizer in `statsmodels` to the general-purpose optimizers in `tensorflow`.
+
+Using the baseline model from [AI tools for actuaries, ch 03], we first reproduce the GLM calibration in statsmodels
+
+\begin{itemize}
+    \item Reproduce GLM results in statsmodels
+    \item Define a tensorflow model with the same architecture and loss function initialize it to the GLM weights and verify the inference. (ensuring that model spec and data encoding is correct and that weights are correctly transformed from GLM to tensorflow)
+    \item Train the tensorflow model using initialization from the GLM weights and verify that the optimizer does not depart from the optimum result.
+    \item Train the tensorflow model using random initialization and verify that the optimizer converges to the same solution.
+\end{itemize}
+
+Two main sources of error have been identified: 
+\begin{itemize}
+    \item Small batch sizes introduce jitter, even when starting from optimal solution.
+    \item Splitting the training data further into fitting and validation will find the optimum on the fitting datatset and not on the whole training data set.
+\end{itemize}
+
+% https://www.statsmodels.org/dev/generated/statsmodels.genmod.generalized_linear_model.GLM.fit.html
+
+Epochs were chosen large enough to observe convergence and increased for larger batch size.
+
+\include{glm_keras_mle_init}
+
+\include{glm_keras_comparison}
 
 \end{document}
