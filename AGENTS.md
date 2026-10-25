@@ -7,6 +7,9 @@ Guidance for agents working in this repository.
 This repository contains the CAS ETH innovation project "Regularized GLM--Neural Network Hybrids for Insurance Pricing".
 The project compares GLM, neural-network, and GLM-neural-network hybrid approaches for insurance claim frequency modelling, with emphasis on the trade-off between predictive performance and GLM-like structure.
 
+## Python Programs
+- use the projects virtual environment .venv if available.
+
 ## Editing Principles
 
 - Keep changes small and directly tied to the requested task.
