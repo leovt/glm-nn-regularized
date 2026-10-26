@@ -409,6 +409,18 @@ For higher regularization penalties it remains close to the deviance of the GLM.
 The transition is very sharp. This might indicate a bifurcation effect, where the local
 optima of the loss function disappear apruptly and the GLM becomes the only attractor.
 
+\subsection{GLM contribution}
+\addvspace{\baselineskip}
+\begin{minipage}{\textwidth}
+    \captionof{figure}{GLM parameters for selected features for different regularization strengths}
+    \label{fig:glmbeta}
+    \centering\noindent
+    \includegraphics[width=\textwidth]{results/glmbeta_vs_reg.pdf}
+\end{minipage}\par
+\addvspace{\baselineskip}
+
+
+
 \subsection{FNN correction}
 In order to better understand the contribution of the FNN part of the hybrid model,
 we look at summary statistics of the FNN contribution on the training data.
@@ -605,10 +617,10 @@ The project plan is recorded in
 
 \section{Reproducing GLM resultis in tensorflow}
 Before training the regularized model, we want to establish that the
-optimizer handles the baseline GLM correctly. 
+optimizer handles the baseline GLM correctly.
 The baseline GLM is a convex optimuzation problem and the MLE solution is unique.
 However as we see in the following table, depending on optimizer settings,
-a considerable calibration error can be introduced by switching from the 
+a considerable calibration error can be introduced by switching from the
 specialized GLM optimizer in `statsmodels` to the general-purpose optimizers in `tensorflow`.
 
 Using the baseline model from [AI tools for actuaries, ch 03], we first reproduce the GLM calibration in statsmodels
@@ -620,7 +632,7 @@ Using the baseline model from [AI tools for actuaries, ch 03], we first reproduc
     \item Train the tensorflow model using random initialization and verify that the optimizer converges to the same solution.
 \end{itemize}
 
-Two main sources of error have been identified: 
+Two main sources of error have been identified:
 \begin{itemize}
     \item Small batch sizes introduce jitter, even when starting from optimal solution.
     \item Splitting the training data further into fitting and validation will find the optimum on the fitting datatset and not on the whole training data set.
