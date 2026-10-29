@@ -4,7 +4,7 @@
 \usepackage{amsmath}
 \usepackage[hidelinks]{hyperref}
 \usepackage{graphicx}
-\usepackage{caption}
+\usepackage[hypcap=false]{caption}
 \usepackage{booktabs}
 \usepackage{makecell}
 
@@ -20,22 +20,21 @@
 % Suggested allocation: introduction/literature 2 pages; data 1--2;
 % methods 2--3; experiments/results 3--4; discussion/conclusion 1--2.
 \begin{abstract}
-This project investigates regularized hybrids of generalized linear models
+This project investigates regularized hybrids of generalised linear models
 and neural networks for insurance claim frequency pricing.
 The proposed model trains a linear branch and a neural correction jointly,
 with a penalty on the correction's dense-layer weights.
 Saved notebook outputs for French motor insurance data show a test Poisson
 deviance of 44.952 for a weakly penalised hybrid, compared with 47.179 for
-the baseline generalized linear model and 44.955 for a frozen hybrid.
+the baseline generalised linear model and 44.955 for a frozen hybrid.
 These descriptive results suggest that regularization can recover
 baseline-like predictions, but do not establish improved interpretability
 or a statistically significant advantage over the benchmarks.
-The planned SHAP analysis remains outstanding.
 \end{abstract}
 
 \section{Introduction}
 \subsection{Motivation and research question}
-Generalized linear models (GLMs) provide an explicit additive structure
+Generalised linear models (GLMs) provide an explicit additive structure
 on the log-rate scale.
 Feed-forward neural networks (FNNs) allow more flexible effects.
 A combined actuarial neural network (CANN) adds a learned correction to
@@ -133,8 +132,8 @@ the stochastic gradient descent must be implemented in a way that includes the G
 The GLM can be implemented as a single dense layer with exponential activation. For this experiment, the exponential activation
 function was implemented in a separate layer, thus allowing the GLM implementation to be reused in the hybrid model.
 
-The bigger second challenge is to make sure that the GLM parameters are estimated reasonably well by the stochastic gradient descent optimizer, and not drift away from the maximum likelihood estimates.
-In order to achieve this, before training hybrid models, several experiments were conducted to train a GLM in Kersa, using NADAM stochastic gradient descent optimizer.
+The bigger second challenge is to make sure that the GLM parameters are estimated reasonably well by the stochastic gradient descent optimiser, and not drift away from the maximum likelihood estimates.
+In order to achieve this, before training hybrid models, several experiments were conducted to train a GLM in Kersa, using NADAM stochastic gradient descent optimiser.
 
 The results of these experiments are shown in table \ref{tab:comparison}, and show that the Keras GLM implementation with appropriate hyperparameter settings is stable, i.e. does not drift away from the maximum likelihood estimates.
 However too small batch sized can lead to considerable drift away from the maximum likelyhood estimate on the training data, despite this being a global optimum on a convex function.
@@ -142,12 +141,12 @@ However too small batch sized can lead to considerable drift away from the maxim
 The following model calibration experiments were conducted:
 \begin{itemize}
 \item {GLM: maximum likelihood estimate using iteratively reweighted least squares, implemented in \texttt{statsmodels}.}
-\item {Keras Control: Keras implementation of the GLM, parameters initialized with the maximum likelihood estimates, no training performed. (This test the correct representation of the model function in Keras.)}
-\item {Keras Trained: Keras implementation of the GLM, parameters randomly initialized and trained using NADAM optimizer.}
-\item {Keras Stability Test: Keras implementation of the GLM, parameters initialized with the maximum likelihood estimates and further trained using NADAM optimizer. (This tests whether stochastic gradient descent can drift away from the maximum likelihood estimates.)}
+\item {Keras Control: Keras implementation of the GLM, parameters initialised with the maximum likelihood estimates, no training performed. (This test the correct representation of the model function in Keras.)}
+\item {Keras Trained: Keras implementation of the GLM, parameters randomly initialised and trained using NADAM optimiser.}
+\item {Keras Stability Test: Keras implementation of the GLM, parameters initialised with the maximum likelihood estimates and further trained using NADAM optimiser. (This tests whether stochastic gradient descent can drift away from the maximum likelihood estimates.)}
 \end{itemize}
 
-The experiments were conducted with and without a validation split, and with different batch sizes. In case of the randomly initialized models the best epoch was kept for final evaluation, in case of the drift tests the last epoch was kept.
+The experiments were conducted with and without a validation split, and with different batch sizes. In case of the randomly initialised models the best epoch was kept for final evaluation, in case of the drift tests the last epoch was kept.
 
 The following table shows the results of the experiments, with the learning and test Poisson deviance, and the observed over expected claims ratio (O/E) on the test data.
 Calibration is measured as the ratio of observed over expected claims, with a value of 1 indicating perfect calibration.
@@ -164,8 +163,8 @@ Calibration is measured as the ratio of observed over expected claims, with a va
 
 The first two rows show identical results to the AI for actuaries tools, confirming that parameters are correctly represented in both implementations.
 
-The convergence of SGD to the maximum likelihood estimate, is much slower than IRLS. With large batch sizes, the calibration is closer to the optimum, but for small batch sizes a calibration error of up to 3\% was observed even after deviance loss stabilized.
-The problem was confirmed to be related to the batch size, as even a perfectly initialized model shows the drift away from the global optimum in a few SGD updates.
+The convergence of SGD to the maximum likelihood estimate, is much slower than IRLS. With large batch sizes, the calibration is closer to the optimum, but for small batch sizes a calibration error of up to 3\% was observed even after deviance loss stabilised.
+The problem was confirmed to be related to the batch size, as even a perfectly initialised model shows the drift away from the global optimum in a few SGD updates.
 
 It is notable that all models retain similar deviance on the test data, but the calibration is worse for small batch sizes.
 Deviance and calibration measure different aspects of model performance.
@@ -216,7 +215,7 @@ The FNN has three hidden layers of widths 20, 15 and ten with hyperbolic
 tangent activations, followed by an exponential rate output.
 The frozen CANN multiplies the fitted GLM rate by an exponential neural
 correction, equivalently adding that correction on the log-rate scale.
-The standalone FNN uses the same constructor with the GLM multiplier
+The stand-alone FNN uses the same constructor with the GLM multiplier
 replaced by one.
 
 The feed-forward neural network (FNN) is a fully connected network with a specified architecture.
@@ -226,7 +225,7 @@ In figure \ref{fig:fnn}, the linear predictor of the FNN is illustrated without 
 The data flow of the FNN is shown, with the data preprocessing on the left, the three hidden layers in the middle, and the exponential output on the right.
 
 Instead of one-hot dummy encoding the FNN uses a learned embedding, which is as a small neural network that maps the categorical input to a lower-dimensional representation.
-The FNN is provided with more features than the GLM, representing less expert involvement in selectzion.
+The FNN is provided with more features than the GLM, representing less expert involvement in selection.
 
 \addvspace{\baselineskip}
 \begin{minipage}{\textwidth}
@@ -239,10 +238,10 @@ The FNN is provided with more features than the GLM, representing less expert in
 
 \subsection{CANN and regularized mixed GLM-FNN}
 The functions expressed by the CANN and the regularized hybrid are identical, their representation in code
-differs in the order of mixing and exponentiation. While the functions are equivalemt, the calibration of the
-model parameters is different, this is the main experimantal question of this project.
+differs in the order of mixing and exponentiation. While the functions are equivalent, the calibration of the
+model parameters is different, this is the main experimental question of this project.
 
-As the CANN implementation (figure \ref{fig:cann}) uses fixed GLM predictions, not merely the GLM coefficients, it is conventient
+As the CANN implementation (figure \ref{fig:cann}) uses fixed GLM predictions, not merely the GLM coefficients, it is convenient
 to implement the mixing step as a multiplication of the GLM rate with a correction factor given by an exponential of the linear FNN.
 The GLM does not need to be implemented in the same framework as the FNN, as it is not re-trained and the GLM prediction is fixed.
 
@@ -360,7 +359,7 @@ observations; neural batch sizes differ between benchmarks and hybrids.}
 The GLM reproduction assertions check learning and test scores against
 46.954 and 47.179 respectively.
 The lowest displayed test score among the principal models belongs to
-the standalone FNN.
+the stand-alone FNN.
 The weakly penalised hybrid is close to the frozen CANN, with a test-score
 difference of approximately 0.003.
 These are single-run descriptive comparisons without uncertainty estimates.
@@ -392,7 +391,7 @@ $100$ & 46.955 & 47.182 & 0.9966\\
 
 \addvspace{\baselineskip}
 \begin{minipage}{\textwidth}
-    \captionof{figure}{Regularitzation path of the jointly trained hybrid}
+    \captionof{figure}{Regularization path of the jointly trained hybrid}
     \label{fig:regpath}
     \centering\noindent
     \includegraphics[width=\textwidth]{results/deviance_vs_reg.pdf}
@@ -431,19 +430,19 @@ to where the contribution essentially disappears.
 \addvspace{\baselineskip}
 \begin{minipage}{\textwidth}
     \captionof{figure}{FNN correction in regularized model}
-    \label{fig:regpath}
+    \label{fig:correction_stat}
     \centering\noindent
     \includegraphics[width=\textwidth]{results/fnn_correction_stats.pdf}
 \end{minipage}\par
 \addvspace{\baselineskip}
 
-The root-mean-square of the FNN contribution decreases from arount 0.5 to 0.2 with increasing regularization penalty.
+The root-mean-square of the FNN contribution decreases from around 0.5 to 0.2 with increasing regularization penalty.
 This corresponds to average modifications of the GLM result of 65\% to 22\%.
 
 \addvspace{\baselineskip}
 \begin{minipage}{\textwidth}
     \captionof{figure}{FNN correction in regularized model - Histograms}
-    \label{fig:regpath}
+    \label{fig:correction_hist}
     \centering\noindent
     \includegraphics[width=\textwidth]{results/fnn_correction_histograms.pdf}
 \end{minipage}\par
@@ -453,8 +452,9 @@ The histograms for different regularization parameters show an increasingly narr
 FNN corrections. Once the correction is narrow enough it can be absorbed by the bias of the GLM without much
 loss on the deviance but freeing up the regularization penalty.
 
-Interestingly the correction does not seem to approach zero. We emphasize that the final bias for the FNN has been fixed at zero
-so the increasingly narrow distribution is realized by the FNN.
+Interestingly the correction does not seem to approach zero.
+We emphasise that the final bias for the FNN has been fixed at zero,
+so the increasingly narrow non-zero distribution is realised by the FNN weights.
 
 
 
@@ -615,21 +615,21 @@ The project plan is recorded in
 % full optimisation-control table and final figure-generation instructions.
 % Keep generated PDFs and LaTeX auxiliary files outside version control.
 
-\section{Reproducing GLM resultis in tensorflow}
+\section{Reproducing GLM results in tensorflow}
 Before training the regularized model, we want to establish that the
-optimizer handles the baseline GLM correctly.
-The baseline GLM is a convex optimuzation problem and the MLE solution is unique.
-However as we see in the following table, depending on optimizer settings,
+optimiser handles the baseline GLM correctly.
+The baseline GLM is a convex optimization problem and the MLE solution is unique.
+However, as we see in the following table, depending on optimiser settings,
 a considerable calibration error can be introduced by switching from the
-specialized GLM optimizer in `statsmodels` to the general-purpose optimizers in `tensorflow`.
+specialised GLM optimiser in `statsmodels` to the general-purpose optimisers in `tensorflow`.
 
 Using the baseline model from [AI tools for actuaries, ch 03], we first reproduce the GLM calibration in statsmodels
 
 \begin{itemize}
     \item Reproduce GLM results in statsmodels
-    \item Define a tensorflow model with the same architecture and loss function initialize it to the GLM weights and verify the inference. (ensuring that model spec and data encoding is correct and that weights are correctly transformed from GLM to tensorflow)
-    \item Train the tensorflow model using initialization from the GLM weights and verify that the optimizer does not depart from the optimum result.
-    \item Train the tensorflow model using random initialization and verify that the optimizer converges to the same solution.
+    \item Define a tensorflow model with the same architecture and loss function initialise it to the GLM weights and verify the inference. (ensuring that model spec and data encoding is correct and that weights are correctly transformed from GLM to tensorflow)
+    \item Train the tensorflow model using initialization from the GLM weights and verify that the optimiser does not depart from the optimum result.
+    \item Train the tensorflow model using random initialization and verify that the optimiser converges to the same solution.
 \end{itemize}
 
 Two main sources of error have been identified:
