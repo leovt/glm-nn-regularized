@@ -102,8 +102,8 @@ functional flexibility and access to additional predictors.
     51--70 and 71+.
     GLM log density and area are not rounded or standardised.}
     \label{tab:features}
-\centering
-\small
+    \centering
+    \small
 \begin{tabular}{@{}p{0.20\linewidth}p{0.34\linewidth}p{0.36\linewidth}@{}}
 \toprule
 Feature & GLM branch & Neural branch\\
@@ -217,11 +217,12 @@ For comparing the GLM with other models it is important not to neglect the role 
 Figure~\ref{fig:glm} shows the three important stages in the data flow, the data processing on the left, the linear prediction in the middle, and the exponential output on the right.
 
 \addvspace{\baselineskip}
+\noindent
 \begin{minipage}{\textwidth}
     \captionof{figure}{GLM data flow}
     \label{fig:glm}
     \centering
-    \includegraphics[scale=0.8]{glm.drawio.pdf}
+    \includegraphics[scale=0.6]{glm.drawio.pdf}
 \end{minipage}\par
 \addvspace{\baselineskip}
 
@@ -248,11 +249,12 @@ The FNN receives additional features, so the benchmark comparison also
 reflects different input information.
 
 \addvspace{\baselineskip}
+\noindent
 \begin{minipage}{\textwidth}
     \captionof{figure}{FNN data flow}
     \label{fig:fnn}
     \centering
-    \includegraphics[scale=0.8]{fnn.drawio.pdf}
+    \includegraphics[scale=0.6]{fnn.drawio.pdf}
 \end{minipage}\par
 \addvspace{\baselineskip}
 
@@ -272,11 +274,12 @@ to implement the mixing step as a multiplication of the GLM rate with a correcti
 The GLM does not need to be implemented in the same framework as the FNN, as it is not re-trained and the GLM prediction is fixed.
 
 \addvspace{\baselineskip}
+\noindent
 \begin{minipage}{\textwidth}
     \captionof{figure}{CANN data flow}
     \label{fig:cann}
     \centering
-    \includegraphics[scale=0.8]{cann.drawio.pdf}
+    \includegraphics[scale=0.60]{cann.drawio.pdf}
 \end{minipage}\par
 \addvspace{\baselineskip}
 
@@ -285,11 +288,12 @@ it is more convenient to implement the linear predictor as the sum of both model
 
 
 \addvspace{\baselineskip}
+\noindent
 \begin{minipage}{\textwidth}
     \captionof{figure}{Regularized mixed GLM-FNN data flow}
     \label{fig:hybrid}
     \centering
-    \includegraphics[scale=0.8]{mixed.drawio.pdf}
+    \includegraphics[scale=0.6]{mixed.drawio.pdf}
 \end{minipage}\par
 \addvspace{\baselineskip}
 
@@ -298,10 +302,12 @@ it is more convenient to implement the linear predictor as the sum of both model
 
 
 \subsection{Jointly trained regularized hybrid}
-With $z_i$ denoting the GLM design and $u_i$ the neural inputs, the
-implemented predictor is
+Both branches use transformations of the original predictors $x_i$.
+Let $z_i=z(x_i)$ denote the GLM design vector and $u_i=u(x_i)$ the
+preprocessed neural inputs.
+The implemented predictor is
 \[
- \eta(z_i,u_i)=z_i^\top\beta+g_\theta(u_i).
+ \eta(x_i)=z(x_i)^\top\beta+g_\theta(u(x_i)).
 \]
 The GLM coefficients initialise the linear branch.
 The correction's final kernel is initialised to zero, so the initial
@@ -361,7 +367,7 @@ The results presented below can be reproduced using the accompanying
 interactive notebook, \texttt{notebooks/project.ipynb}.
 \subsection{Baseline reproduction and predictive comparison}
 \begin{table}[htbp]
-\centering
+    \centering
 \begin{tabular}{lrrr}
 \hline
 Model & Learning $D_{100}$ & Test $D_{100}$ & Test O/E\\
@@ -386,7 +392,9 @@ The lowest displayed test score among the principal models belongs to
 the stand-alone FNN.
 The weakly penalised hybrid is close to the frozen CANN, with a test-score
 difference of approximately 0.003.
-These are single-run descriptive comparisons without uncertainty estimates.
+Each model configuration was fitted once and evaluated on the same test sample.
+Variation across random initialisations and uncertainty in the differences
+between test scores were not assessed.
 The lowest test score in a sweep is not an independently validated
 selection of regularization strength.
 
@@ -396,7 +404,7 @@ selection of regularization strength.
 \begin{minipage}{\textwidth}
     \captionof{table}{Joint-hybrid sweep with batch size 50,000 and 200 epochs.}
     \label{tab:path}
-\centering
+    \centering
 \begin{tabular}{rrrr}
 \hline
 $\lambda$ & Learning $D_{100}$ & Test $D_{100}$ & Test O/E\\
@@ -417,6 +425,7 @@ $1$ & 46.955 & 47.182 & 0.9966\\
 \addvspace{\baselineskip}
 
 \addvspace{\baselineskip}
+\noindent
 \begin{minipage}{\textwidth}
     \captionof{figure}{Regularization path of the jointly trained hybrid}
     \label{fig:regpath}
@@ -442,6 +451,7 @@ Repeated initialisations and alternative optimisation settings would help invest
 
 \subsection{GLM contribution}
 \addvspace{\baselineskip}
+\noindent
 \begin{minipage}{\textwidth}
     \captionof{figure}{GLM parameters for selected features for different regularization strengths}
     \label{fig:glmbeta}
@@ -469,11 +479,28 @@ of effects between the branches.
 \subsection{FNN correction}
 In order to better understand the contribution of the FNN part of the hybrid model,
 we look at summary statistics of the FNN contribution on the training data.
+Recall that the hybrid predictor is
+\[
+ \eta(x_i)=z(x_i)^\top\beta+g_\theta(u(x_i)).
+\]
+The quantity examined is the neural correction $g_\theta(u(x_i))$,
+whose root-mean-square over the $n$ learning-sample observations is
+\[
+ \operatorname{RMS}(g_\theta)
+ =\sqrt{\frac{1}{n}\sum_{i=1}^n g_\theta(u(x_i))^2}.
+\]
+Each observation receives equal weight, irrespective of exposure.
+The root-mean-square (RMS) summarises the magnitude of the correction
+across observations without allowing positive and negative corrections
+to cancel.
+It is measured on the linear-predictor (log-rate) scale, so it does not
+directly represent an average percentage change in predicted rates.
 
 The correction statistics confirm the very abrupt transition from a model where the FNN has a contribution
 to where the contribution essentially disappears.
 
 \addvspace{\baselineskip}
+\noindent
 \begin{minipage}{\textwidth}
     \captionof{figure}{FNN correction in regularized model}
     \label{fig:correction_stat}
@@ -489,6 +516,7 @@ $\exp\{g_\theta(u_i)\}$.
 
 
 \addvspace{\baselineskip}
+\noindent
 \begin{minipage}{\textwidth}
     \captionof{figure}{FNN correction in regularized model - Histograms}
     \label{fig:correction_hist}
@@ -502,7 +530,7 @@ log-rate corrections whose centre can remain non-zero.
 A nearly constant correction can in principle be represented by the
 linear branch's intercept, reducing the need for penalised neural weights.
 This is a possible explanation for the transition, rather than a mechanism
-established by the saved results.
+established in the experiment.
 At $\lambda=0.0018$, the displayed corrections are concentrated near zero.
 The neural output layer has no bias, although hidden-layer biases remain
 trainable and unpenalised.
@@ -540,8 +568,10 @@ validation reuse in initial fitting and preprocessing, incomplete penalty
 coverage and a single seed and supplied test split.
 Feature-level diagnostics were not conducted, so the experiments do not
 establish whether regularization produces more interpretable fitted effects.
-Regularized validation losses also combine fit and penalty rather than
-providing a common unpenalised selection score across $\lambda$ values.
+The reported deviances exclude regularization penalties and are directly
+comparable across $\lambda$ values.
+Within each run, however, the epoch restored by the callback is selected
+using validation loss, which includes the penalty for regularized models.
 Repeated seeds, comparable feature sets and independent model selection
 would strengthen the comparison.
 
