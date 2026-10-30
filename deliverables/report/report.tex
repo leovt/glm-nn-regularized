@@ -48,13 +48,22 @@ The analysis concerns claim frequency only.
 \section{Background and related work}
 \subsection{Actuarial learning and hybrid models}
 \emph{AI Tools for Actuaries} supplies the main methodological and
-implementation starting point \cite{aitools,notebooks}.
+implementation starting point \cite{aitools,resources}.
 \emph{Statistical Foundations of Actuarial Learning and its Applications}
 is a broader reference for GLMs, neural networks and regularization
 \cite{foundations}.
 Schelldorfer and W\"uthrich provide the foundational reference for nesting
 classical actuarial models in neural networks \cite{nesting}.
-% Expand into a short comparison of frozen CANN and jointly fitted hybrids.
+They discuss both joint training of the GLM and neural components and a
+variant that freezes the fitted GLM coefficients \cite{nesting}.
+The CANN benchmark adopted here from \emph{AI Tools for Actuaries} uses
+the frozen variant: the fitted GLM provides a fixed reference predictor
+and the neural branch learns an additive correction on the log-rate scale
+\cite{aitools,resources}.
+This project investigates the jointly trained variant with an asymmetric
+penalty on the neural correction's dense-layer weights.
+The experimental question is how this asymmetric regularization affects
+predictive performance and the contribution of the neural branch.
 
 \subsection{Statistical continuity between GLMs and neural networks}
 Moving from a GLM to an FNN changes the predictor while retaining the
@@ -67,7 +76,7 @@ the suitability of the Poisson assumption or calibration.
 \section{Data and preprocessing}
 \subsection{Source and sample}
 The notebook loads \texttt{freMTPL2freq.parquet} from the data archive
-accompanying \emph{AI Tools for Actuaries} \cite{data,notebooks}.
+accompanying \emph{AI Tools for Actuaries} \cite{resources}.
 Its saved output contains 678,007 policies and no missing entries in the
 14 imported columns.
 The supplied \texttt{LearnTest} labels allocate 610,206 policies to the
@@ -330,6 +339,7 @@ The linear branch is unpenalised.
 
 \section{Experimental design and evaluation}
 \subsection{Training and validation}
+Neural-network experiments were run in Google Colab using an NVIDIA T4 GPU.
 Neural runs use Nadam and seed 1234.
 The principal FNN and CANN runs use 200 epochs and batches of 5,000;
 the regularization sweep uses 200 epochs and batches of 50,000.
@@ -363,8 +373,8 @@ Gini indices and lift curves were proposed but are not present in the
 saved outputs.
 
 \section{Results}
-The results presented below can be reproduced using the accompanying
-interactive notebook, \texttt{notebooks/project.ipynb}.
+The implementation and supplementary results are available in the accompanying
+\href{https://github.com/leovt/glm-nn-regularized/blob/511f2358edcb77bdb3b4358fc1a2c89218849fd6/notebooks/project.ipynb}{project notebook}\footnote{\url{https://github.com/leovt/glm-nn-regularized/blob/511f2358edcb77bdb3b4358fc1a2c89218849fd6/notebooks/project.ipynb}}.
 \subsection{Baseline reproduction and predictive comparison}
 \begin{table}[htbp]
     \centering
@@ -636,11 +646,11 @@ figure using saved outputs.
 The analysis builds on published literature and existing teaching code.
 In particular, the project notebook explicitly attributes its GLM
 preprocessing to \texttt{Ch3\_02\_Poisson\_GLM.ipynb} in the
-\emph{AI Tools for Actuaries} repository \cite{notebooks}.
+\emph{AI Tools for Actuaries} repository \cite{resources}.
 Its FNN section also identifies these teaching materials as its starting
 point; the repository includes embedding and CANN notebooks.
 These materials are associated with the Swiss Association of Actuaries'
-summer-school teaching programme \cite{sav,teaching}.
+summer-school teaching programme \cite{sav,resources}.
 Attribution belongs to the named authors and code contributors, rather
 than implying that the notebook code was independently developed here.
 The jointly trainable branch, penalty sweep and project-specific
@@ -654,11 +664,15 @@ Mayer, M., Schelldorfer, J. and Scognamiglio, S.
 \emph{AI Tools for Actuaries}. Lecture notes, SSRN 5162304.
 \url{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5162304}.
 
-\bibitem{foundations}
-W\"uthrich, M. V. and Merz, M. (2023).
-\emph{Statistical Foundations of Actuarial Learning and its Applications}.
-Springer.
-\url{https://www.research-collection.ethz.ch/handle/20.500.11850/644920}.
+\bibitem{resources}
+\emph{AI Tools for Actuaries}: accompanying code, data and teaching
+resources for \cite{aitools}.
+Accompanying Python notebooks:
+\url{https://github.com/wueth/AITools4Actuaries}.
+Data archive containing \texttt{freMTPL2freq.parquet}:
+\url{https://people.math.ethz.ch/~wueth/AITools/Data.zip}.
+Project website and summer-school information:
+\url{https://aitools4actuaries.com/}.
 
 \bibitem{nesting}
 Schelldorfer, J. and W\"uthrich, M. V.
@@ -666,40 +680,19 @@ Schelldorfer, J. and W\"uthrich, M. V.
 SSRN 3320525.
 \url{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3320525}.
 
-\bibitem{notebooks}
-\emph{AI Tools for Actuaries}: accompanying Python notebooks.
-\texttt{Ch3\_02\_Poisson\_GLM.ipynb},
-\texttt{Ch5\_05\_FNNs - embedding.ipynb} and
-\texttt{Ch5\_07\_CANN.ipynb}.
-\url{https://github.com/wueth/AITools4Actuaries}.
 
-\bibitem{data}
-\emph{AI Tools for Actuaries}: data archive containing
-\texttt{freMTPL2freq.parquet}.
-\url{https://people.math.ethz.ch/~wueth/AITools/Data.zip}.
+\bibitem{foundations}
+W\"uthrich, M. V. and Merz, M. (2023).
+\emph{Statistical Foundations of Actuarial Learning and its Applications}.
+Springer.
+\url{https://www.research-collection.ethz.ch/handle/20.500.11850/644920}.
+
 
 \bibitem{sav}
 Swiss Association of Actuaries.
 \emph{AI Tools for Actuaries (work in progress)}. Teaching-material overview.
 \url{https://www.actuaries.ch/document/download/289}.
 
-\bibitem{teaching}
-\emph{AI Tools for Actuaries}. Project website and summer-school information.
-\url{https://aitools4actuaries.com/}.
 \end{thebibliography}
-
-\appendix
-\section{Reproducibility and supplementary results}
-The primary implementation is
-\href{../../notebooks/project.ipynb}{\texttt{notebooks/project.ipynb}}.
-The project plan is recorded in
-\href{../outline/CAS_Innovation_Project_Outline.md}{the project outline}.
-% Add package versions, hardware, execution date, data provenance/revision,
-% full optimisation-control table and final figure-generation instructions.
-% Keep generated PDFs and LaTeX auxiliary files outside version control.
-
-\include{glm_keras_mle_init}
-
-\include{glm_keras_comparison}
 
 \end{document}
