@@ -6,6 +6,7 @@
 \usepackage[hypcap=false]{caption}
 \usepackage{booktabs}
 \usepackage{makecell}
+\usepackage{xurl}
 
 \title{Regularized GLM--Neural Network Hybrids for Insurance Pricing\\
 \large CAS ETH in Machine Learning in Finance and Insurance -- Innovation Project Report}
@@ -27,13 +28,13 @@ or a statistically significant advantage over the benchmarks.
 
 \section{Introduction}
 \subsection{Motivation and research question}
-Generalised linear models (GLMs) are a well studied family of models used in actuarial modelling. Together with a log-link funcunction they create easyly explainable models with a multiplicative structure.
+Generalised linear models (GLMs) are a well studied family of models used in actuarial modelling. Together with a log-link function they create easily explainable models with a multiplicative structure.
 
 They are a form of machine learning, albeit typically with low dimensionality of the parameter space and much expert input through feature selection and preprocessing.
 
-Feed-forward neural networks (FNNs) represent much larger function spaces, allowing  more flexible models. However more care must be taken not to overfit the training data, which would reduce their predictive power, and they are mostly black boxes, making an explanation of the relationship between features and predicted outcomes difficult.
+Feed-forward neural networks (FNNs) represent much larger function spaces, allowing  more flexible models. However, more care must be taken not to overfit the training data, which would reduce their predictive power, and they are mostly black boxes, making an explanation of the relationship between features and predicted outcomes difficult.
 
-Recently developped hybrid models try to combine the robustness and explainability of GLM with the flexibility of FNNs. One approach is a combined actuarial neural network (CANN), where a FNN adds a learned correction to a fitted GLM \cite{aitools,nesting}.
+Recently developed hybrid models try to combine the robustness and explainability of GLM with the flexibility of FNNs. One approach is a combined actuarial neural network (CANN), where a FNN adds a learned correction to a fitted GLM \cite{aitools,nesting}.
 
 This project asks whether joint training with asymmetric regularization
 can retain predictive improvements while favouring a GLM-like structure.
@@ -41,7 +42,7 @@ Training the GLM jointly with the regularized neural network, it might absorb li
 
 \subsection{Contribution and scope}
 The empirical contribution is a jointly trained GLM--neural network hybrid, where a regularization parameter controls the balance between the full neural network flexibility and the directly explainable GLM parameters.
-The model is trained on French motor third-party liability data, the same dataset used in an exploration of CANN approch by the data science group of the Swiss asscociation of actuaries. A sweep of different regularization parameters is performed.
+The model is trained on French motor third-party liability data, the same dataset used in an exploration of CANN approach by the data science group of the Swiss association of actuaries. A sweep of different regularization parameters is performed.
 
 The analysis concerns claim frequency only.
 
@@ -171,7 +172,7 @@ The following model calibration experiments were conducted:
 
 The experiments were conducted with and without a validation split, and with different batch sizes. In case of the randomly initialised models the best epoch was kept for final evaluation, in case of the drift tests the last epoch was kept.
 
-The following table shows the results of the experiments, with the learning and test Poisson deviance, and the observed over expected claims ratio (O/E) on the test data.
+Table~\ref{tab:glm_keras} shows the results of the experiments, with the learning and test Poisson deviance, and the observed over expected claims ratio (O/E) on the test data.
 Calibration is measured as the ratio of observed over expected claims, with a value of one indicating aggregate balance.
 This does not establish calibration within individual risk groups.
 
@@ -181,7 +182,8 @@ This does not establish calibration within individual risk groups.
     \captionof{table}{GLM in Keras}
     \label{tab:glm_keras}
     \centering
-    \input{results/glm_keras}
+    \small
+    \makebox[\linewidth][c]{\input{results/glm_keras}}
 \end{minipage}\par
 \addvspace{\baselineskip}
 
@@ -195,24 +197,24 @@ balance: test O/E reaches 1.0367, a deviation of approximately 3.7 percent.
 Larger batches often reduce this drift, although the randomly initialised
 runs do not show uniform improvement with batch size.
 
-While IRLS is trained on the full training data, as the convergence can be verified by the scoring equations, for stochastic gradient descent the training data is typically further split into a fitting ad validation set.
+IRLS uses the full learning sample here, whereas the stochastic optimisation
+experiments also consider a split into fitting and validation subsets.
 
 This validation split also changes the fitting sample, so its optimum need
 not equal the maximum likelihood estimate determined on the full training data.
 
-Poisson deviance measures predictive fit and is sensitive to both
+For the Poisson GLM, satisfaction of all score equations on the fitting
+sample provides a convergence check against the global optimum.
+An O/E ratio of one corresponds to satisfaction of the intercept score
+equation and checks aggregate balance.
+Poisson deviance assesses predictive fit and is sensitive to both
 calibration and discrimination.
-Aggregate O/E measures overall balance and can reveal calibration
-errors that cause only small changes in deviance.
+Reporting both deviance and O/E therefore reveals whether stochastic
+optimisation preserves aggregate balance while achieving a good predictive fit.
+
 Similar training and validation losses provide limited evidence against
 a large generalisation gap in these runs; they do however not establish the
 absence of overfitting or stability across samples.
-
-For reserving often calibration is more important than discrimination, however for pricing well discriminated risks are important for risk selection and avoiding adverse selection.
-%todo: cite https://people.math.ethz.ch/~wueth/Lecture/InternationalSummerSchool/Lecture%208_Calibration/Chapter-8-Calibration.pdf
-
-
-
 
 \section{Modelling functions}
 
@@ -331,11 +333,14 @@ The implemented objective is
 \]
 where $\mathcal D$ comprises the correction's hidden and output dense
 layers.
-The penalty excludes embeddings and hidden-layer biases; the correction
-output has no bias.
-This differs from the outline's proposed penalty on all correction
-parameters and should not be described as full-parameter ridge shrinkage.
-The linear branch is unpenalised.
+The penalty excludes embeddings and hidden-layer biases.
+The neural output layer has no bias, although hidden-layer biases remain
+trainable and unpenalised.
+An output bias would duplicate the GLM intercept: only their sum would
+enter the predictor, leaving their individual values unidentified.
+Omitting it removes this redundant parameter, although the neural branch
+can still represent constant effects through its remaining parameters.
+
 
 \section{Experimental design and evaluation}
 \subsection{Training and validation}
@@ -445,7 +450,7 @@ $1$ & 46.955 & 47.182 & 0.9966\\
 \addvspace{\baselineskip}
 
 The  scores approach the GLM baseline from $\lambda=0.00180$
-onwards; the largest penalty in the shown sweep is $\lambda=1$, ensuring prohibitive penalty for the FNN.
+onwards; the largest penalty in the sweep is $\lambda=1$, ensuring prohibitive penalty for the FNN.
 Test deviance rises from 46.196 at $\lambda=0.00176$ to 47.181 at
 $\lambda=0.00180$.
 The closest sampled points around the jump are 46.287 at
@@ -470,21 +475,16 @@ Repeated initialisations and alternative optimisation settings would help invest
 \end{minipage}\par
 \addvspace{\baselineskip}
 
-
-
-Figure~\ref{fig:glmbeta} shows substantial changes in some linear-branch
-coefficients as regularization increases.
-The coefficient for driver age 21--25 rises sharply near the transition,
-while the vehicle-brand B12 coefficient becomes less negative.
-Density and area coefficients vary less over the displayed path.
-This indicates that dependency on driver age is poorly modelled by the GLM, consistent with TODO: AI4actuaries conclusions.
-
-These trajectories describe the linear branch on the log-rate scale;
-they are not the total fitted feature effects, because the neural branch
-can also represent effects of the same inputs.
-Their stabilisation at stronger penalties is consistent with the
-baseline-like predictions, but does not establish a unique allocation
-of effects between the branches.
+Inspection of all linear-branch coefficients showed particularly strong
+sensitivity to regularization strength for driver-age effects.
+Figure~\ref{fig:glmbeta} presents selected coefficients to illustrate this
+variation alongside more stable effects.
+The coefficient for driver age 21--25 rises sharply near the transition.
+This sensitivity suggests that the neural correction captures age-related
+structure that is partly transferred to the linear branch as regularization
+increases.
+Less abrupt transitions can be seen for some brand coefficients such as the vehicle-brand B12 coefficient shown.
+Density and area coefficients vary less with the regularization parameter.
 
 \subsection{FNN correction}
 In order to better understand the contribution of the FNN part of the hybrid model,
@@ -506,8 +506,8 @@ to cancel.
 It is measured on the linear-predictor (log-rate) scale, so it does not
 directly represent an average percentage change in predicted rates.
 
-The correction statistics confirm the very abrupt transition from a model where the FNN has a contribution
-to where the contribution essentially disappears.
+The correction statistics in Figure~\ref{fig:correction_stat} show an
+abrupt transition towards a negligible neural contribution.
 
 \addvspace{\baselineskip}
 \noindent
@@ -515,7 +515,7 @@ to where the contribution essentially disappears.
     \captionof{figure}{FNN correction in regularized model}
     \label{fig:correction_stat}
     \centering\noindent
-    \includegraphics[width=\textwidth]{results/fnn_correction_stats.pdf}
+    \includegraphics[width=\textwidth,trim=0 0 0 24pt,clip]{results/fnn_correction_stats.pdf}
 \end{minipage}\par
 \addvspace{\baselineskip}
 
@@ -524,6 +524,12 @@ falls from approximately 0.5 towards 0.2; it then becomes close to zero.
 The rate multiplier relative to the jointly fitted linear branch is
 $\exp\{g_\theta(u_i)\}$.
 
+At penalties below the transition, the histograms in Figure~\ref{fig:correction_hist}
+show a narrowing distribution of log-rate corrections whose centre can
+remain non-zero.
+A possible explanation for the transition is that a nearly constant correction can in principle be represented by the
+linear branch's intercept, reducing the need for penalised neural weights.
+At $\lambda=0.0018$, the displayed corrections are all concentrated near zero.
 
 \addvspace{\baselineskip}
 \noindent
@@ -534,16 +540,6 @@ $\exp\{g_\theta(u_i)\}$.
     \includegraphics[width=\textwidth]{results/fnn_correction_histograms.pdf}
 \end{minipage}\par
 \addvspace{\baselineskip}
-
-Before the collapse, the histograms show a narrowing distribution of
-log-rate corrections whose centre can remain non-zero.
-A nearly constant correction can in principle be represented by the
-linear branch's intercept, reducing the need for penalised neural weights.
-This is a possible explanation for the transition, rather than a mechanism
-established in the experiment.
-At $\lambda=0.0018$, the displayed corrections are concentrated near zero.
-The neural output layer has no bias, although hidden-layer biases remain
-trainable and unpenalised.
 
 \section{Discussion and real-world applicability}
 \subsection{Interpretation of the findings}
@@ -649,13 +645,11 @@ preprocessing to \texttt{Ch3\_02\_Poisson\_GLM.ipynb} in the
 \emph{AI Tools for Actuaries} repository \cite{resources}.
 Its FNN section also identifies these teaching materials as its starting
 point; the repository includes embedding and CANN notebooks.
-These materials are associated with the Swiss Association of Actuaries'
-summer-school teaching programme \cite{sav,resources}.
 Attribution belongs to the named authors and code contributors, rather
 than implying that the notebook code was independently developed here.
 The jointly trainable branch, penalty sweep and project-specific
 experiments constitute adaptations of this starting point.
-% Confirm the precise copied/adapted cells and upstream revision before submission.
+
 
 \begin{thebibliography}{9}
 \bibitem{aitools}
@@ -687,11 +681,6 @@ W\"uthrich, M. V. and Merz, M. (2023).
 Springer.
 \url{https://www.research-collection.ethz.ch/handle/20.500.11850/644920}.
 
-
-\bibitem{sav}
-Swiss Association of Actuaries.
-\emph{AI Tools for Actuaries (work in progress)}. Teaching-material overview.
-\url{https://www.actuaries.ch/document/download/289}.
 
 \end{thebibliography}
 
