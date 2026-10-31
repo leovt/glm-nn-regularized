@@ -1,0 +1,23 @@
+\addvspace{\baselineskip}
+\noindent
+\begin{minipage}{\textwidth}
+\captionof{table}{Comparison of GLM estimation procedures.}
+\label{tab:glm_keras_comparison}
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{rrrrrrr}
+\toprule
+Batch size & Epochs & Validation & Train dev. & Train O/E & Test dev. & Test O/E \\
+\midrule
+ &  &  & 46.954 & 1.0000 & 47.179 & 0.9978 \\
+5000 & 200 &  & 46.961 & 1.0095 & 47.200 & 1.0072 \\
+5000 & 200 & 0.1 & 47.005 & 1.0338 & 47.250 & 1.0313 \\
+50000 & 2000 &  & 46.955 & 1.0026 & 47.174 & 1.0003 \\
+50000 & 2000 & 0.1 & 46.989 & 0.9943 & 47.233 & 0.9918 \\
+200000 & 4000 &  & 46.985 & 0.9965 & 47.197 & 0.9939 \\
+200000 & 4000 & 0.1 & 47.278 & 0.9657 & 47.514 & 0.9631 \\
+\bottomrule
+\end{tabular}
+\end{minipage}\par
+\addvspace{\baselineskip}

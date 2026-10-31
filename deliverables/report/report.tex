@@ -29,10 +29,9 @@ or a statistically significant advantage over the benchmarks.
 \section{Introduction}
 \subsection{Motivation and research question}
 Generalised linear models (GLMs) are a well studied family of models used in actuarial modelling. Together with a log-link function they create easily explainable models with a multiplicative structure.
-
 They are a form of machine learning, albeit typically with low dimensionality of the parameter space and much expert input through feature selection and preprocessing.
 
-Feed-forward neural networks (FNNs) represent much larger function spaces, allowing  more flexible models. However, more care must be taken not to overfit the training data, which would reduce their predictive power, and they are mostly black boxes, making an explanation of the relationship between features and predicted outcomes difficult.
+Feed-forward neural networks (FNNs) represent much larger function spaces, allowing  more flexible models. However, more care must be taken not to overfit the training data, which would reduce their predictive power. The high dimensionality of parameter space and nested functions make an explanation of the relationship between features and predicted outcomes difficult.
 
 Recently developed hybrid models try to combine the robustness and explainability of GLM with the flexibility of FNNs. One approach is a combined actuarial neural network (CANN), where a FNN adds a learned correction to a fitted GLM \cite{aitools,nesting}.
 
@@ -42,8 +41,9 @@ Training the GLM jointly with the regularized neural network, it might absorb li
 
 \subsection{Contribution and scope}
 The empirical contribution is a jointly trained GLM--neural network hybrid, where a regularization parameter controls the balance between the full neural network flexibility and the directly explainable GLM parameters.
-The model is trained on French motor third-party liability data, the same dataset used in an exploration of CANN approach by the data science group of the Swiss association of actuaries. A sweep of different regularization parameters is performed.
+The model is trained on French motor third-party liability data, the same dataset used in \cite{resources}.
 
+A sweep of different regularization parameters is performed.
 The analysis concerns claim frequency only.
 
 \section{Background and related work}
@@ -67,12 +67,12 @@ The experimental question is how this asymmetric regularization affects
 predictive performance and the contribution of the neural branch.
 
 \subsection{Statistical continuity between GLMs and neural networks}
-Moving from a GLM to an FNN changes the predictor while retaining the
+Moving from a GLM to an FNN or hybrid models changes the predictor while retaining the
 Poisson assumption, log link, exposure treatment and likelihood-based
 evaluation used here.
 This provides a direct connection with familiar actuarial modelling.
 Greater predictor flexibility does not itself resolve questions about
-the suitability of the Poisson assumption or calibration.
+the suitability of the Poisson assumption.
 
 \section{Data and preprocessing}
 \subsection{Source and sample}
@@ -83,8 +83,7 @@ Its saved output contains 678,007 policies and no missing entries in the
 The supplied \texttt{LearnTest} labels allocate 610,206 policies to the
 learning sample and 67,801 to the test sample, corresponding to a 90/10 split.
 The recorded claim totals are 23,738 and 2,645 respectively.
-% Add exposure totals, claim-count distribution and checks for duplicates,
-% positive exposure, valid density and admissible category ranges.
+
 
 \subsection{Feature construction}
 The GLM uses driver-age groups, vehicle brand, fuel type, log population
@@ -107,10 +106,7 @@ functional flexibility and access to additional predictors.
 \addvspace{\baselineskip}
 \noindent
 \begin{minipage}{\textwidth}
-    \captionof{table}{Inputs to the linear and neural branches.
-    Driver-age groups are 18--20, 21--25, 26--30, 31--40, 41--50,
-    51--70 and 71+.
-    GLM log density and area are not rounded or standardised.}
+    \captionof{table}{Input preprocessing for the linear and neural branches.}
     \label{tab:features}
     \centering
     \small
@@ -118,10 +114,10 @@ functional flexibility and access to additional predictors.
 \toprule
 Feature & GLM branch & Neural branch\\
 \midrule
-Driver age & Seven groups; reference 31--40 & Capped at 90; standardised\\
+Driver age & 7 groups, dummy encoded & Capped at 90; standardised\\
 Vehicle brand & Dummy encoding & Two-dimensional embedding\\
-Fuel type & Dummy encoding & Diesel indicator\\
-Population density & Natural logarithm & Logarithm rounded to two decimals; standardised\\
+Fuel type & Dummy encoding & Dummy encoding\\
+Population \mbox{density} & Natural logarithm & Logarithm rounded to two decimals; standardised\\
 Area & Ordinal codes one to six & Ordinal codes; standardised\\
 Vehicle age & Omitted & Capped at 20; standardised\\
 Bonus--malus & Omitted & Capped at 150; standardised\\
@@ -154,7 +150,7 @@ the stochastic gradient descent must be implemented in a way that includes the G
 The GLM can be implemented as a single dense layer with exponential activation. For this experiment, the exponential activation
 function was implemented in a separate layer, thus allowing the GLM implementation to be reused in the hybrid model.
 
-The bigger second challenge is to make sure that the GLM parameters are estimated reasonably well by the stochastic gradient descent optimiser, and not drift away from the maximum likelihood estimates.
+The bigger second challenge is to make sure that the GLM parameters are estimated reasonably well by the stochastic gradient descent optimiser, and do not drift away from the maximum likelihood estimates.
 Before training hybrid models, several experiments were conducted to train a GLM in Keras, using NADAM stochastic gradient descent optimiser.
 
 Table~\ref{tab:glm_keras} shows that suitable hyperparameter settings
@@ -199,7 +195,6 @@ runs do not show uniform improvement with batch size.
 
 IRLS uses the full learning sample here, whereas the stochastic optimisation
 experiments also consider a split into fitting and validation subsets.
-
 This validation split also changes the fitting sample, so its optimum need
 not equal the maximum likelihood estimate determined on the full training data.
 
@@ -237,7 +232,7 @@ Figure~\ref{fig:glm} shows the three important stages in the data flow, the data
 \end{minipage}\par
 \addvspace{\baselineskip}
 
-The reference GLM was taken from the \emph{AI Tools for Actuaries} repository, and is used as a benchmark for the other models.
+The reference GLM was taken from the \emph{AI Tools for Actuaries} repository, and is used as a benchmark for the other models, and as a component of the hybrid model.
 Its input transformations are summarised in Table~\ref{tab:features}.
 
 \subsection{Feed-forward neural network (FNN)}
@@ -254,7 +249,10 @@ It follows the \emph{AI Tools for Actuaries} implementation.
 Figure~\ref{fig:fnn} shows the preprocessing, hidden layers and
 exponential output.
 
-Instead of one-hot dummy encoding the FNN uses a learned embedding, which maps categorical inputs to learned lower-dimensional representations. The embedding is trained as part of the model training.
+In contrast to one-hot dummy encoding, the FNN uses learned embeddings
+for vehicle brand and region.
+Embeddings map categorical inputs to learned lower-dimensional representations.
+The embeddings are trained as part of the model training.
 
 The FNN receives additional features, so the benchmark comparison also
 reflects different input information.
@@ -374,8 +372,7 @@ Aggregate calibration is reported as observed divided by expected claims,
 $\sum_iY_i/\sum_i e_i r_i$ (O/E).
 A value of one denotes aggregate balance, without implying subgroup
 calibration.
-Gini indices and lift curves were proposed but are not present in the
-saved outputs.
+
 
 \section{Results}
 The implementation and supplementary results are available in the accompanying
@@ -410,8 +407,7 @@ difference of approximately 0.003.
 Each model configuration was fitted once and evaluated on the same test sample.
 Variation across random initialisations and uncertainty in the differences
 between test scores were not assessed.
-The lowest test score in a sweep is not an independently validated
-selection of regularization strength.
+Test scores are shown for exploration. Using them for regularization parameter selection would contaminate the test set for model validation.
 
 \subsection{Regularization path}
 \addvspace{\baselineskip}
@@ -438,6 +434,12 @@ $1$ & 46.955 & 47.182 & 0.9966\\
 \end{tabular}
 \end{minipage}\par
 \addvspace{\baselineskip}
+
+The runs in Table~\ref{tab:path} all used a linear branch initialised
+with IRLS-fitted GLM coefficients.
+Exploratory runs suggest that random initialisation of the linear branch
+achieves similar Poisson deviance at the regularization strengths examined,
+but requires more training epochs.
 
 \addvspace{\baselineskip}
 \noindent
@@ -591,7 +593,7 @@ Aggregate O/E and Poisson deviance alone do not establish deployment
 readiness.
 
 \subsection{Modelling choices and development effort}
-Practical model development involves a trade-off between feature engineering and hyperparameter tuning.
+Practical model development involves feature engineering and hyperparameter tuning.
 In this project, the GLM required explicit choices about feature transformations and age groups,
 but fitting by maximum likelihood was comparatively straightforward.
 The FNN reduced the need to specify functional forms in advance, although input preparation remained necessary.
@@ -599,14 +601,12 @@ The FNN reduced the need to specify functional forms in advance, although input 
 As neural-network tuning was not the focus of this project,
 most hyperparameters followed the example provided by
 \emph{AI Tools for Actuaries}.
-
 Nevertheless, substantial effort went into choosing batch sizes, epoch
 budgets and regularization strengths.
 In practice, hyperparameter tuning could require further experimentation
 with learning rates, batch sizes, initialisation, regularization and
 training procedures.
-The optimisation-control experiments illustrate sensitivity to some of
-these choices, although development time was not measured systematically.
+The optimisation-control experiments illustrate sensitivity to some of these choices.
 
 The jointly trained hybrid does not eliminate either source of effort.
 Its linear branch still requires a suitable GLM design, while its neural
@@ -629,12 +629,12 @@ weights while allowing the GLM branch to adapt.
 Available results show improved test deviance over the selected GLM
 baseline at weak penalties and baseline-like performance at stronger
 penalties.
-The central claim about departure from GLM structure remains open until
-the planned structural diagnostics are completed.
+The structural diagnostics illustrate changes in the branch contributions,
+but do not establish improved interpretability.
 
 \section*{Use of AI tools and attribution}
-The project outline explicitly records drafting assistance from Claude.
-OpenAI Codex assisted with the structure and wording of this report draft,
+Google Gemini assisted with the implementation of the project notebook.
+OpenAI Codex assisted with the structure and wording of this report,
 inspection of the supplied project files, checking and transcription of
 saved notebook results into tables and revision of the regularization-path
 figure using saved outputs.
@@ -643,10 +643,10 @@ The analysis builds on published literature and existing teaching code.
 In particular, the project notebook explicitly attributes its GLM
 preprocessing to \texttt{Ch3\_02\_Poisson\_GLM.ipynb} in the
 \emph{AI Tools for Actuaries} repository \cite{resources}.
-Its FNN section also identifies these teaching materials as its starting
-point; the repository includes embedding and CANN notebooks.
+Its FNN section also uses these teaching materials as its starting
+point, including embeddings and CANN notebooks.
 Attribution belongs to the named authors and code contributors, rather
-than implying that the notebook code was independently developed here.
+than implying that the entire notebook code was independently developed here.
 The jointly trainable branch, penalty sweep and project-specific
 experiments constitute adaptations of this starting point.
 

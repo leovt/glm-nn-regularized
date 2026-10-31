@@ -1,0 +1,23 @@
+\addvspace{\baselineskip}
+\noindent
+\begin{minipage}{\textwidth}
+\captionof{table}{Drift away from MLE}
+\label{tab:glm_keras_mle_init}
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{rrrrrrr}
+\toprule
+Batch size & Epochs & Validation & Train dev. & Train O/E & Test dev. & Test O/E \\
+\midrule
+ &  &  & 46.954 & 1.0000 & 47.179 & 0.9978 \\
+5000 & 20 &  & 46.956 & 1.0110 & 47.189 & 1.0088 \\
+5000 & 20 & 0.1 & 46.967 & 1.0388 & 47.197 & 1.0367 \\
+50000 & 200 &  & 46.954 & 1.0026 & 47.174 & 1.0004 \\
+50000 & 200 & 0.1 & 46.955 & 0.9987 & 47.182 & 0.9966 \\
+200000 & 400 &  & 46.965 & 0.9988 & 47.167 & 0.9965 \\
+200000 & 400 & 0.1 & 46.955 & 1.0028 & 47.183 & 1.0007 \\
+\bottomrule
+\end{tabular}
+\end{minipage}\par
+\addvspace{\baselineskip}
