@@ -219,6 +219,8 @@ __marimo__/
 .streamlit/secrets.toml
 
 # LaTeX build artifacts
+*.nav
+*.snm
 *.aux
 *.bbl
 *.bcf
@@ -231,6 +233,7 @@ __marimo__/
 *.synctex.gz
 *.toc
 deliverables/report/report.pdf
+deliverables/presentation/presentation.pdf
 
 # Local literature PDFs
 literature/**/*.pdf
