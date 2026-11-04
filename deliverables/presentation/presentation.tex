@@ -145,26 +145,7 @@ Joint hybrid, $\lambda=10^{-5}$ & 45.011 & 44.952 & 1.0028\\
     neural batch sizes differ between benchmarks and hybrids.
 \end{frame}
 
-\begin{frame}{Joint-hybrid sweep with batch size 50,000 and 200 epochs.}
-    \centering
-    \small
-\begin{tabular}{rrrr}
-\hline
-$\lambda$ & Learning $D_{100}$ & Test $D_{100}$ & Test O/E\\
-\hline
-$0$ & 44.986 & 44.989 & 0.9964\\
-$10^{-5}$ & 45.011 & 44.952 & 1.0028\\
-$10^{-4}$ & 45.182 & 45.104 & 1.0118\\
-$5\times10^{-4}$ & 45.641 & 45.620 & 0.9972\\
-$10^{-3}$ & 45.717 & 45.727 & 0.9974\\
-$2\times10^{-3}$ & 46.954 & 47.182 & 0.9961\\
-$5\times10^{-3}$ & 46.955 & 47.182 & 0.9966\\
-$10^{-2}$ & 46.955 & 47.182 & 0.9966\\
-$10^{-1}$ & 46.955 & 47.182 & 0.9966\\
-$1$ & 46.955 & 47.182 & 0.9966\\
-\hline
-\end{tabular}
-\end{frame}
+
 
 \begin{frame}{Regularization path of the jointly trained hybrid}
     \centering
@@ -230,6 +211,27 @@ $1$ & 46.955 & 47.182 & 0.9966\\
 \begin{frame}{GLM in Keras}
     \centering
     \resizebox{0.72\textwidth}{!}{\input{../../deliverables/report/results/glm_keras.tex}}
+\end{frame}
+
+\begin{frame}{Joint-hybrid sweep with batch size 50,000 and 200 epochs.}
+    \centering
+    \small
+\begin{tabular}{rrrr}
+\hline
+$\lambda$ & Learning $D_{100}$ & Test $D_{100}$ & Test O/E\\
+\hline
+$0$ & 44.986 & 44.989 & 0.9964\\
+$10^{-5}$ & 45.011 & 44.952 & 1.0028\\
+$10^{-4}$ & 45.182 & 45.104 & 1.0118\\
+$5\times10^{-4}$ & 45.641 & 45.620 & 0.9972\\
+$10^{-3}$ & 45.717 & 45.727 & 0.9974\\
+$2\times10^{-3}$ & 46.954 & 47.182 & 0.9961\\
+$5\times10^{-3}$ & 46.955 & 47.182 & 0.9966\\
+$10^{-2}$ & 46.955 & 47.182 & 0.9966\\
+$10^{-1}$ & 46.955 & 47.182 & 0.9966\\
+$1$ & 46.955 & 47.182 & 0.9966\\
+\hline
+\end{tabular}
 \end{frame}
 
 \end{document}
