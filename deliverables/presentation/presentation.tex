@@ -13,7 +13,7 @@
 \title{Regularized GLM--Neural Network Hybrids for Insurance Pricing}
 \subtitle{CAS ETH in Machine Learning in Finance and Insurance\\Innovation Project}
 \author{Leonhard Vogt}
-\date{\today}
+\date{6 November 2026}
 
 \begin{document}
 
@@ -68,18 +68,14 @@ Region & Omitted & Two-dimensional embedding\\
 \begin{frame}{Implementation challenges}
     \small
     \begin{itemize}
-        \item Represent the GLM as a trainable Keras layer so that gradients
-        update both branches jointly; apply exponentiation after combining
-        their log-rate predictors.
-        \item Preserve the fitted GLM at initialisation: transfer its
-        coefficients and initialise the neural output kernel to zero.
+        \item Represent the GLM as a trainable Keras layer so that stochastic gradient descent can
+        update both branches jointly.
+        \item Transfer the fitted GLM coefficients at initialisation.
         \item Control optimisation drift from the maximum likelihood
-        estimates through batch-size and epoch choices; check deviance
-        and aggregate calibration.
-        \item Apply the penalty to neural dense-layer weights while leaving
-        the GLM unpenalised; embeddings and hidden biases remain unpenalised.
+        estimates through batch-size and epoch choices.
+
         \item Omit the neural output bias to avoid duplicating the GLM
-        intercept; overlapping effects between branches still remain possible.
+        intercept.
     \end{itemize}
 \end{frame}
 
@@ -135,12 +131,12 @@ FNN & 44.830 & 44.894 & 1.0163\\
 FNN, mean initialisation & 44.814 & 44.902 & 1.0229\\
 Joint hybrid, $\lambda=0$ & 44.986 & 44.989 & 0.9964\\
 Joint hybrid, $\lambda=10^{-5}$ & 45.011 & 44.952 & 1.0028\\
+Joint hybrid, $\lambda=1$ & 46.955 & 47.182 & 0.9966\\
 \hline
 \end{tabular}
 
     \footnotesize
-    Learning scores include validation observations;
-    neural batch sizes differ between benchmarks and hybrids.
+    Batch sizes differ between benchmarks and hybrids.
 \end{frame}
 
 
@@ -168,18 +164,10 @@ Joint hybrid, $\lambda=10^{-5}$ & 45.011 & 44.952 & 1.0028\\
 \begin{frame}{Real-world applicability}
     \small
     \begin{itemize}
-        \item A regularization path could help insurers assess predictive
-        gains alongside the complexity of corrections to a familiar tariff.
-        \item Joint training allows the linear tariff component to adapt,
-        but its coefficients do not describe the complete fitted effects.
-        \item The observed jump in the regularization path prevents a smooth
-        transition between flexible and GLM-like predictions in these runs.
-        \item Practical pricing use requires subgroup calibration,
-        stability checks and documentation of combined feature effects.
-        \item Independent model selection, comparable inputs and repeated
-        seeds are needed to strengthen the evidence from these experiments.
-        \item Tariff design also requires stability checks, documented
-        pricing decisions and consideration of costs beyond claim frequency.
+        \item A regularization path shows how much predictive accuracy can be gained by adding complexity to a simpler GLM.
+        \item Joint training allows the linear tariff component to adapt.
+        \item The neural network makes substantial contributions to the GLM predictions before the sharp transition.
+        \item Practical use needs subgroup calibration, stability checks, documented pricing decisions and costs beyond claim frequency.
     \end{itemize}
 \end{frame}
 
@@ -187,15 +175,14 @@ Joint hybrid, $\lambda=10^{-5}$ & 45.011 & 44.952 & 1.0028\\
     \small
     \begin{itemize}
         \item Regularization controls the neural contribution, but the
-        transition towards GLM-like predictions can be abrupt.
-        \item GLM-like predictions do not establish interpretability;
-        both branches can represent simple effects.
-        \item Batch size and initialisation matter: stochastic optimisation
-        can move a fitted GLM away from its maximum likelihood estimates.
+        transition towards GLM-like predictions is abrupt.
+        \item The hybrid model does not imply interpretability like a GLM, as
+        both branches substantially contribute to predictions up to the transition point.
+        \item Stochastic optimisation
+        can move a fitted GLM away from its maximum likelihood estimates. Sufficient batch size alleviates this issue.
         \item Hybrids retain GLM feature-design choices and neural-network
-        tuning, with regularization strength as an additional choice.
-        \item Predictive fit and calibration need separate assessment,
-        similar deviance can coexist with calibration drift; assess both when selecting models.
+        tuning, with regularization strength as an additional choice, thus combining challenges of both approaches.
+        \item Predictive fit and calibration need separate assessment, assess both when selecting models.
     \end{itemize}
 \end{frame}
 

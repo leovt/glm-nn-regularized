@@ -139,6 +139,10 @@ The central experiment is therefore to vary \(\lambda\) and observe what happens
 ## 11. Selected saved notebook results
 **Presenter cue: Avoid spending too long on slide 11**
 
+The joint hybrid at \(\lambda=1\) has learning deviance 46.955,
+test deviance 47.182 and test O/E 0.9966, illustrating the return to
+GLM-like performance under strong regularization.
+
 The GLM scores match the teaching material to the displayed precision.
 The neural benchmark scores are close, but not identical:
 
