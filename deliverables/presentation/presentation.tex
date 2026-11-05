@@ -32,8 +32,6 @@
         dense-layer weights while leaving the GLM unpenalised.
         \item Examine predictive fit, GLM coefficients and the neural
         contribution along the regularization path.
-        \item Assess whether a smaller neural correction supports
-        a GLM-like structure; improved interpretability remains to be established.
     \end{itemize}
 \end{frame}
 
@@ -180,8 +178,8 @@ Joint hybrid, $\lambda=10^{-5}$ & 45.011 & 44.952 & 1.0028\\
         stability checks and documentation of combined feature effects.
         \item Independent model selection, comparable inputs and repeated
         seeds are needed to strengthen the evidence from these experiments.
-        \item Poisson deviance and aggregate calibration alone do not
-        establish deployment readiness or an interpretable tariff.
+        \item Tariff design also requires stability checks, documented
+        pricing decisions and consideration of costs beyond claim frequency.
     \end{itemize}
 \end{frame}
 
@@ -196,9 +194,8 @@ Joint hybrid, $\lambda=10^{-5}$ & 45.011 & 44.952 & 1.0028\\
         can move a fitted GLM away from its maximum likelihood estimates.
         \item Hybrids retain GLM feature-design choices and neural-network
         tuning, with regularization strength as an additional choice.
-        \item Predictive fit and calibration need separate assessment;
-        stronger evidence requires comparable inputs, independent validation
-        and repeated seeds.
+        \item Predictive fit and calibration need separate assessment,
+        similar deviance can coexist with calibration drift; assess both when selecting models.
     \end{itemize}
 \end{frame}
 
